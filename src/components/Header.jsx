@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     Box,
     Group,
@@ -7,14 +7,12 @@ import {
     Burger,
     Drawer,
     Stack,
-    useMantineTheme
 } from '@mantine/core';
 import { useDisclosure, useWindowScroll } from '@mantine/hooks';
-import { IconBrandTelegram } from '@tabler/icons-react';
 
 const navLinks = [
     { label: 'About', href: '#about' },
-    { label: 'Benefits', href: '#benefits' },
+    { label: 'Benefits', href: '#services' },
     { label: 'Apply', href: '#register' },
     { label: 'Contact', href: '#footer' },
 ];
@@ -22,7 +20,6 @@ const navLinks = [
 export function Header() {
     const [opened, { toggle, close }] = useDisclosure(false);
     const [scroll] = useWindowScroll();
-    const theme = useMantineTheme();
 
     const isScrolled = scroll.y > 50;
 
@@ -36,41 +33,26 @@ export function Header() {
                     left: 0,
                     right: 0,
                     zIndex: 1000,
-                    padding: '1rem 2rem',
+                    padding: '0.75rem 2rem',
                     transition: 'all 0.3s ease',
-                    background: isScrolled
-                        ? 'rgba(15, 15, 35, 0.9)'
-                        : 'transparent',
-                    backdropFilter: isScrolled ? 'blur(16px)' : 'none',
+                    background: '#ffffff',
                     borderBottom: isScrolled
-                        ? '1px solid rgba(255, 255, 255, 0.1)'
+                        ? '1px solid #f1f5f9'
+                        : '1px solid transparent',
+                    boxShadow: isScrolled
+                        ? '0 1px 3px rgba(0, 0, 0, 0.05)'
                         : 'none',
                 }}
             >
                 <Group justify="space-between" maw={1280} mx="auto">
                     {/* Logo */}
                     <Group gap="xs">
-                        <Box
-                            style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
-                            <IconBrandTelegram size={24} color="white" />
-                        </Box>
                         <Text
                             size="xl"
-                            fw={800}
+                            fw={700}
                             style={{
+                                color: '#2563EB',
                                 letterSpacing: '-0.5px',
-                                background: 'linear-gradient(135deg, #ffffff 0%, #a78bfa 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
                             }}
                         >
                             RareJob
@@ -78,7 +60,7 @@ export function Header() {
                     </Group>
 
                     {/* Desktop Navigation */}
-                    <Group gap="xl" visibleFrom="sm">
+                    <Group gap={32} visibleFrom="sm">
                         {navLinks.map((link) => (
                             <Text
                                 key={link.label}
@@ -86,14 +68,14 @@ export function Header() {
                                 href={link.href}
                                 size="sm"
                                 fw={500}
-                                c="gray.4"
                                 style={{
+                                    color: '#475569',
                                     textDecoration: 'none',
                                     transition: 'color 0.2s ease',
                                     cursor: 'pointer',
                                 }}
-                                onMouseEnter={(e) => e.target.style.color = '#8b5cf6'}
-                                onMouseLeave={(e) => e.target.style.color = ''}
+                                onMouseEnter={(e) => e.target.style.color = '#2563EB'}
+                                onMouseLeave={(e) => e.target.style.color = '#475569'}
                             >
                                 {link.label}
                             </Text>
@@ -103,23 +85,18 @@ export function Header() {
                     {/* Desktop CTA */}
                     <Group gap="md" visibleFrom="sm">
                         <Button
-                            variant="subtle"
-                            color="gray.4"
-                            radius="xl"
-                        >
-                            Log In
-                        </Button>
-                        <Button
-                            variant="gradient"
-                            gradient={{ from: 'violet', to: 'pink', deg: 135 }}
+                            size="md"
                             radius="xl"
                             component="a"
                             href="#register"
                             style={{
-                                boxShadow: '0 4px 20px rgba(139, 92, 246, 0.4)',
+                                background: '#2563EB',
+                                color: 'white',
                             }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#1d4ed8'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = '#2563EB'}
                         >
-                            Apply Now ✨
+                            Apply Now
                         </Button>
                     </Group>
 
@@ -128,7 +105,7 @@ export function Header() {
                         opened={opened}
                         onClick={toggle}
                         hiddenFrom="sm"
-                        color="white"
+                        color="#0f172a"
                     />
                 </Group>
             </Box>
@@ -141,13 +118,8 @@ export function Header() {
                 padding="xl"
                 hiddenFrom="sm"
                 styles={{
-                    body: {
-                        background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)',
-                        height: '100%',
-                    },
-                    header: {
-                        background: 'transparent',
-                    },
+                    body: { background: '#ffffff', height: '100%' },
+                    header: { background: '#ffffff' },
                 }}
             >
                 <Stack gap="xl" mt="xl">
@@ -158,7 +130,7 @@ export function Header() {
                             href={link.href}
                             size="xl"
                             fw={600}
-                            c="white"
+                            c="#0f172a"
                             onClick={close}
                             style={{ textDecoration: 'none' }}
                         >
@@ -166,16 +138,15 @@ export function Header() {
                         </Text>
                     ))}
                     <Button
-                        variant="gradient"
-                        gradient={{ from: 'violet', to: 'pink', deg: 135 }}
                         size="lg"
                         radius="xl"
                         component="a"
                         href="#register"
                         onClick={close}
                         mt="xl"
+                        style={{ background: '#2563EB' }}
                     >
-                        Apply Now ✨
+                        Apply Now
                     </Button>
                 </Stack>
             </Drawer>

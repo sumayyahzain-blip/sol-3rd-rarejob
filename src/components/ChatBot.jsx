@@ -10,507 +10,217 @@ import {
     Avatar,
     ScrollArea,
     Transition,
-    Badge
+    Badge,
+    Button,
 } from '@mantine/core';
 import {
     IconMessageCircle,
     IconX,
     IconSend,
-    IconRobot,
-    IconUser,
-    IconSparkles
+    IconBooks,
 } from '@tabler/icons-react';
 
-// Predefined AI responses for common questions
-const aiResponses = {
-    greetings: [
-        "Hello! 👋 Welcome to RareJob! I'm your AI assistant. How can I help you today?",
-        "Hi there! I'm RareJob's virtual assistant. Feel free to ask me anything about becoming an online English tutor!",
-    ],
-    requirements: `To become a RareJob tutor, you need:
-📋 **Basic Requirements:**
-• Be at least 18 years old
-• Be computer literate
-• Fluent in English (oral and written)
-• Have a stable internet connection (5 Mbps+)
-• Have a quiet workspace with good lighting
+// RareJob Assistant AI English Logic
+// Uses the "Sandwich Correction Method" for gentle grammar help
 
-📄 **Valid IDs Accepted:**
-National ID, Passport, Driver's License, PRC ID, and more!`,
+const commonCorrections = [
+    { wrong: /\bi am (\w+) in /gi, correct: 'I am a $1 at ', topic: 'articles' },
+    { wrong: /\bi want learn/gi, correct: 'I want to learn', topic: 'infinitives' },
+    { wrong: /\bi am scared to/gi, correct: 'I am afraid to', topic: 'vocabulary' },
+    { wrong: /\byesterday i go/gi, correct: 'Yesterday I went', topic: 'past tense' },
+    { wrong: /\bi go yesterday/gi, correct: 'I went yesterday', topic: 'past tense' },
+    { wrong: /\bhe don't/gi, correct: 'He doesn\'t', topic: 'subject-verb agreement' },
+    { wrong: /\bshe don't/gi, correct: 'She doesn\'t', topic: 'subject-verb agreement' },
+    { wrong: /\bmore better/gi, correct: 'better', topic: 'comparatives' },
+    { wrong: /\bmost best/gi, correct: 'best', topic: 'superlatives' },
+    { wrong: /\bi have went/gi, correct: 'I have gone / I went', topic: 'perfect tense' },
+];
 
-    salary: `💰 **Earning Potential:**
-• Competitive hourly rates
-• Get paid every two weeks
-• Performance bonuses available
-• Rate increases based on performance
-
-The exact rate depends on your experience and evaluation during the application process.`,
-
-    schedule: `⏰ **Flexible Schedule:**
-• Peak hours: 8:00 AM - 5:00 PM (PST)
-• You can teach 24/7 based on availability
-• Minimum teaching hours per week may apply
-• You control your own schedule!`,
-
-    process: `📝 **Application Process:**
-1. Submit your application form
-2. Wait for the initial screening
-3. Complete online assessment
-4. Attend live demo lesson
-5. Start teaching!
-
-The process typically takes 1-2 weeks.`,
-
-    equipment: `🖥️ **Required Equipment:**
-• PC/Laptop (Core i3+, 6GB RAM+)
-• Noise-cancelling headset with mic
-• Stable internet (5 Mbps download)
-• Webcam (720p or higher)
-• Quiet room with plain background`,
-
-    default: `I'm here to help! You can ask me about:
-• 📋 Requirements to become a tutor
-• 💰 Salary and payment
-• ⏰ Schedule and flexibility
-• 📝 Application process
-• 🖥️ Equipment needed
-
-Or visit our FAQ page for more details!`,
+const conversationTopics = {
+    greeting: {
+        responses: [
+            "Hello! 👋 Welcome to RareJob! I'm your English practice assistant. What would you like to practice today?",
+            "Hi there! 👋 I'm here to help you practice English. What's your goal - Business English, daily conversation, or something else?",
+        ],
+        followUp: "What brings you here today?"
+    },
+    business: {
+        responses: [
+            "Business English is very useful for your career! 📚 Many professionals need it for meetings, emails, and presentations.",
+        ],
+        followUp: "What kind of work do you do?"
+    },
+    job: {
+        responses: [
+            "That sounds like an interesting job! Good communication skills are important in any profession.",
+        ],
+        followUp: "Do you often need to speak English at work?"
+    },
+    nervous: {
+        responses: [
+            "It is completely normal to feel nervous! 😊 Many of our students felt that way at first. The best way to build confidence is to practice with a patient teacher.",
+        ],
+        followUp: "Would you like to see our tutors who specialize in helping nervous beginners?"
+    },
+    practice: {
+        responses: [
+            "Great! Let's practice together. I'll help you with grammar and vocabulary as we chat.",
+        ],
+        followUp: "Tell me about your day. What did you do this morning?"
+    },
+    default: {
+        responses: [
+            "That's interesting! Tell me more about that.",
+            "I understand! Can you explain a bit more?",
+        ],
+        followUp: "What else would you like to practice?"
+    }
 };
 
-function getAIResponse(message) {
+function detectGrammarIssue(message) {
     const lowerMessage = message.toLowerCase();
-
-    if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-        return aiResponses.greetings[Math.floor(Math.random() * aiResponses.greetings.length)];
+    for (const rule of commonCorrections) {
+        if (rule.wrong.test(lowerMessage)) {
+            const corrected = message.replace(rule.wrong, rule.correct);
+            return { found: true, corrected, topic: rule.topic };
+        }
     }
-    if (lowerMessage.includes('require') || lowerMessage.includes('qualification') || lowerMessage.includes('need')) {
-        return aiResponses.requirements;
-    }
-    if (lowerMessage.includes('salary') || lowerMessage.includes('pay') || lowerMessage.includes('earn') || lowerMessage.includes('money')) {
-        return aiResponses.salary;
-    }
-    if (lowerMessage.includes('schedule') || lowerMessage.includes('time') || lowerMessage.includes('hours') || lowerMessage.includes('flexible')) {
-        return aiResponses.schedule;
-    }
-    if (lowerMessage.includes('process') || lowerMessage.includes('apply') || lowerMessage.includes('how') || lowerMessage.includes('step')) {
-        return aiResponses.process;
-    }
-    if (lowerMessage.includes('equipment') || lowerMessage.includes('computer') || lowerMessage.includes('laptop') || lowerMessage.includes('headset')) {
-        return aiResponses.equipment;
-    }
-
-    return aiResponses.default;
+    return { found: false };
 }
 
-// Animated Robot Icon Component
-function AnimatedRobotIcon({ size = 28 }) {
-    return (
-        <Box
-            style={{
-                position: 'relative',
-                width: size,
-                height: size,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            {/* Main robot icon */}
-            <IconRobot
-                size={size}
-                style={{
-                    animation: 'robotBounce 2s ease-in-out infinite',
-                }}
-            />
-            {/* Sparkle effects */}
-            <IconSparkles
-                size={size * 0.5}
-                style={{
-                    position: 'absolute',
-                    top: -4,
-                    right: -4,
-                    color: '#fbbf24',
-                    animation: 'sparkle 1.5s ease-in-out infinite',
-                }}
-            />
-        </Box>
-    );
+function getConversationTopic(message) {
+    const lowerMessage = message.toLowerCase();
+    if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) return 'greeting';
+    if (lowerMessage.includes('business') || lowerMessage.includes('work') || lowerMessage.includes('career')) return 'business';
+    if (lowerMessage.includes('manager') || lowerMessage.includes('job') || lowerMessage.includes('company') || lowerMessage.includes('bank')) return 'job';
+    if (lowerMessage.includes('scared') || lowerMessage.includes('nervous') || lowerMessage.includes('afraid') || lowerMessage.includes('shy')) return 'nervous';
+    if (lowerMessage.includes('practice') || lowerMessage.includes('learn') || lowerMessage.includes('improve')) return 'practice';
+    return 'default';
 }
+
+function generateResponse(userMessage) {
+    const grammarCheck = detectGrammarIssue(userMessage);
+    const topic = getConversationTopic(userMessage);
+    const topicData = conversationTopics[topic];
+    const baseResponse = topicData.responses[Math.floor(Math.random() * topicData.responses.length)];
+
+    let response = '';
+    if (grammarCheck.found) {
+        response += baseResponse + '\n\n';
+        response += `📝 **Small tip:** "${grammarCheck.corrected}"\n\n`;
+        response += topicData.followUp;
+    } else {
+        response = baseResponse + '\n\n' + topicData.followUp;
+    }
+    return response;
+}
+
+const quickPracticeTopics = ['Practice greetings', 'Business English', 'Daily conversation'];
 
 export function ChatBot() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
-        {
-            id: 1,
-            type: 'bot',
-            text: "Hello! 👋 I'm RareJob AI Assistant. How can I help you today?"
-        },
+        { id: 1, type: 'bot', text: "Hello! 👋 I'm **RareJob Assistant**, your English practice partner.\n\nI'm here to help you practice conversational English. Don't worry about making mistakes – I'll gently help you improve!\n\nWhat would you like to practice today?" },
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const scrollRef = useRef(null);
 
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-        }
+        if (scrollRef.current) scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }, [messages]);
 
-    const handleSend = () => {
-        if (!inputValue.trim()) return;
-
-        // Add user message
-        const userMessage = {
-            id: Date.now(),
-            type: 'user',
-            text: inputValue,
-        };
-        setMessages(prev => [...prev, userMessage]);
+    const handleSend = (text = inputValue) => {
+        if (!text.trim()) return;
+        setMessages(prev => [...prev, { id: Date.now(), type: 'user', text }]);
         setInputValue('');
         setIsTyping(true);
-
-        // Simulate AI thinking and respond
         setTimeout(() => {
-            const botResponse = {
-                id: Date.now() + 1,
-                type: 'bot',
-                text: getAIResponse(inputValue),
-            };
-            setMessages(prev => [...prev, botResponse]);
+            setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: generateResponse(text) }]);
             setIsTyping(false);
-        }, 1000 + Math.random() * 1000);
+        }, 800 + Math.random() * 600);
     };
 
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
+    const handleKeyPress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } };
+
+    const renderText = (text) => {
+        const parts = text.split(/(\*\*[^*]+\*\*)/g);
+        return parts.map((part, i) => part.startsWith('**') && part.endsWith('**') ? <Text key={i} span fw={700} c="inherit">{part.slice(2, -2)}</Text> : part);
     };
 
     return (
         <>
-            {/* Chat Button with Animation */}
-            <Box
-                style={{
-                    position: 'fixed',
-                    bottom: 24,
-                    right: 24,
-                    zIndex: 1000,
-                }}
-            >
+            <Box style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000 }}>
                 <Transition mounted={!isOpen} transition="scale" duration={200}>
                     {(styles) => (
-                        <Box
-                            onClick={() => setIsOpen(true)}
-                            style={{
-                                ...styles,
-                                cursor: 'pointer',
-                                position: 'relative',
-                            }}
-                        >
-                            {/* Pulsing ring effect */}
-                            <Box
-                                style={{
-                                    position: 'absolute',
-                                    inset: -8,
-                                    borderRadius: '50%',
-                                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3))',
-                                    animation: 'pulse-ring 2s ease-out infinite',
-                                }}
-                            />
-
-                            {/* Main button */}
-                            <ActionIcon
-                                size={64}
-                                radius="xl"
-                                variant="gradient"
-                                gradient={{ from: 'violet', to: 'pink', deg: 135 }}
-                                style={{
-                                    boxShadow: '0 8px 32px rgba(139, 92, 246, 0.5)',
-                                    animation: 'float 3s ease-in-out infinite',
-                                }}
-                            >
-                                <AnimatedRobotIcon size={28} />
+                        <Box onClick={() => setIsOpen(true)} style={{ ...styles, cursor: 'pointer', position: 'relative' }}>
+                            <ActionIcon size={60} radius="xl" style={{ background: '#2563EB', boxShadow: '0 4px 20px rgba(37, 99, 235, 0.4)' }}>
+                                <IconMessageCircle size={28} color="white" />
                             </ActionIcon>
-
-                            {/* Notification Badge */}
-                            <Badge
-                                size="sm"
-                                variant="filled"
-                                color="green"
-                                style={{
-                                    position: 'absolute',
-                                    top: -4,
-                                    right: -4,
-                                    animation: 'pulse 2s ease-in-out infinite',
-                                    boxShadow: '0 0 10px rgba(34, 197, 94, 0.5)',
-                                }}
-                            >
-                                AI
-                            </Badge>
-
-                            {/* Chat bubble hint */}
-                            <Paper
-                                p="xs"
-                                radius="lg"
-                                style={{
-                                    position: 'absolute',
-                                    right: 72,
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    background: 'rgba(15, 15, 35, 0.95)',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    whiteSpace: 'nowrap',
-                                    animation: 'slideIn 0.5s ease-out',
-                                }}
-                            >
-                                <Text size="xs" c="white" fw={500}>
-                                    💬 Need help? Chat with me!
-                                </Text>
+                            <Badge size="xs" color="green" style={{ position: 'absolute', top: -2, right: -2, padding: '4px 6px' }}>Online</Badge>
+                            <Paper p="xs" radius="md" style={{ position: 'absolute', right: 70, top: '50%', transform: 'translateY(-50%)', background: '#ffffff', border: '1px solid #e2e8f0', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                                <Text size="xs" c="#0f172a" fw={500}>📚 Practice English with me!</Text>
                             </Paper>
                         </Box>
                     )}
                 </Transition>
             </Box>
 
-            {/* Chat Window */}
             <Transition mounted={isOpen} transition="slide-up" duration={300}>
                 {(styles) => (
-                    <Paper
-                        style={{
-                            ...styles,
-                            position: 'fixed',
-                            bottom: 24,
-                            right: 24,
-                            width: 380,
-                            height: 520,
-                            zIndex: 1001,
-                            background: 'rgba(15, 15, 35, 0.95)',
-                            backdropFilter: 'blur(20px)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: 20,
-                            overflow: 'hidden',
-                            display: 'flex',
-                            flexDirection: 'column',
-                        }}
-                    >
-                        {/* Header */}
-                        <Box
-                            p="md"
-                            style={{
-                                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3))',
-                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                            }}
-                        >
+                    <Paper style={{ ...styles, position: 'fixed', bottom: 24, right: 24, width: 380, height: 520, zIndex: 1001, background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' }}>
+                        <Box p="md" style={{ background: '#2563EB' }}>
                             <Group justify="space-between">
                                 <Group gap="sm">
-                                    <Avatar
-                                        size="md"
-                                        radius="xl"
-                                        style={{
-                                            background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-                                        }}
-                                    >
-                                        <IconRobot size={20} style={{ animation: 'robotBounce 2s ease-in-out infinite' }} />
-                                    </Avatar>
+                                    <Avatar size="md" radius="xl" style={{ background: 'rgba(255,255,255,0.2)' }}><IconBooks size={20} color="white" /></Avatar>
                                     <Box>
-                                        <Text size="sm" fw={600} c="white">RareJob AI Assistant</Text>
-                                        <Group gap={4}>
-                                            <Box
-                                                style={{
-                                                    width: 8,
-                                                    height: 8,
-                                                    borderRadius: '50%',
-                                                    background: '#22c55e',
-                                                    animation: 'pulse 1.5s ease-in-out infinite',
-                                                }}
-                                            />
-                                            <Text size="xs" c="gray.4">Online • Ready to help</Text>
-                                        </Group>
+                                        <Text size="sm" fw={600} c="white">RareJob Assistant</Text>
+                                        <Group gap={4}><Box style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} /><Text size="xs" c="rgba(255,255,255,0.8)">Online • Replies instantly</Text></Group>
                                     </Box>
                                 </Group>
-                                <ActionIcon
-                                    variant="subtle"
-                                    color="gray"
-                                    radius="xl"
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    <IconX size={18} />
-                                </ActionIcon>
+                                <ActionIcon variant="subtle" color="white" radius="xl" onClick={() => setIsOpen(false)}><IconX size={18} /></ActionIcon>
                             </Group>
                         </Box>
 
-                        {/* Messages */}
-                        <ScrollArea
-                            flex={1}
-                            p="md"
-                            viewportRef={scrollRef}
-                            styles={{
-                                viewport: { padding: '12px' },
-                            }}
-                        >
-                            <Stack gap="md">
+                        <ScrollArea flex={1} viewportRef={scrollRef} style={{ background: '#f8fafc' }}>
+                            <Stack gap="md" p="md">
                                 {messages.map((msg) => (
-                                    <Group
-                                        key={msg.id}
-                                        justify={msg.type === 'user' ? 'flex-end' : 'flex-start'}
-                                        align="flex-end"
-                                        gap="xs"
-                                    >
-                                        {msg.type === 'bot' && (
-                                            <Avatar
-                                                size="sm"
-                                                radius="xl"
-                                                style={{
-                                                    background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-                                                }}
-                                            >
-                                                <IconRobot size={14} />
-                                            </Avatar>
-                                        )}
-                                        <Paper
-                                            p="sm"
-                                            radius="lg"
-                                            maw="80%"
-                                            style={{
-                                                background: msg.type === 'user'
-                                                    ? 'linear-gradient(135deg, #8b5cf6, #ec4899)'
-                                                    : 'rgba(255, 255, 255, 0.08)',
-                                                borderBottomRightRadius: msg.type === 'user' ? 4 : 16,
-                                                borderBottomLeftRadius: msg.type === 'bot' ? 4 : 16,
-                                            }}
-                                        >
-                                            <Text
-                                                size="sm"
-                                                c="white"
-                                                style={{
-                                                    whiteSpace: 'pre-line',
-                                                    lineHeight: 1.5,
-                                                }}
-                                            >
-                                                {msg.text}
-                                            </Text>
+                                    <Group key={msg.id} justify={msg.type === 'user' ? 'flex-end' : 'flex-start'} align="flex-end" gap="xs">
+                                        {msg.type === 'bot' && <Avatar size="sm" radius="xl" style={{ background: '#dbeafe' }}><IconBooks size={14} color="#2563EB" /></Avatar>}
+                                        <Paper p="sm" radius="lg" maw="80%" style={{ background: msg.type === 'user' ? '#2563EB' : '#ffffff', border: msg.type === 'bot' ? '1px solid #e2e8f0' : 'none', borderBottomRightRadius: msg.type === 'user' ? 4 : 16, borderBottomLeftRadius: msg.type === 'bot' ? 4 : 16 }}>
+                                            <Text size="sm" c={msg.type === 'user' ? 'white' : '#0f172a'} style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>{renderText(msg.text)}</Text>
                                         </Paper>
-                                        {msg.type === 'user' && (
-                                            <Avatar
-                                                size="sm"
-                                                radius="xl"
-                                                color="cyan"
-                                                variant="filled"
-                                            >
-                                                <IconUser size={14} />
-                                            </Avatar>
-                                        )}
                                     </Group>
                                 ))}
-
-                                {/* Typing indicator */}
                                 {isTyping && (
                                     <Group gap="xs">
-                                        <Avatar
-                                            size="sm"
-                                            radius="xl"
-                                            style={{
-                                                background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-                                            }}
-                                        >
-                                            <IconRobot size={14} />
-                                        </Avatar>
-                                        <Paper
-                                            p="sm"
-                                            radius="lg"
-                                            style={{
-                                                background: 'rgba(255, 255, 255, 0.08)',
-                                            }}
-                                        >
-                                            <Group gap={4}>
-                                                <Box className="typing-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6', animation: 'typing 1s ease-in-out infinite' }} />
-                                                <Box className="typing-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6', animation: 'typing 1s ease-in-out infinite 0.2s' }} />
-                                                <Box className="typing-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6', animation: 'typing 1s ease-in-out infinite 0.4s' }} />
-                                            </Group>
+                                        <Avatar size="sm" radius="xl" style={{ background: '#dbeafe' }}><IconBooks size={14} color="#2563EB" /></Avatar>
+                                        <Paper p="sm" radius="lg" style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                                            <Group gap={4}>{[0, 0.2, 0.4].map((delay, i) => <Box key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563EB', animation: `typing 1s ease-in-out infinite ${delay}s` }} />)}</Group>
                                         </Paper>
                                     </Group>
+                                )}
+                                {messages.length === 1 && (
+                                    <Stack gap="xs" mt="sm">
+                                        <Text size="xs" c="#64748b" ta="center">Quick start:</Text>
+                                        <Group gap="xs" justify="center">{quickPracticeTopics.map((topic) => <Button key={topic} size="xs" variant="light" color="blue" radius="xl" onClick={() => handleSend(topic)}>{topic}</Button>)}</Group>
+                                    </Stack>
                                 )}
                             </Stack>
                         </ScrollArea>
 
-                        {/* Input */}
-                        <Box
-                            p="md"
-                            style={{
-                                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                            }}
-                        >
+                        <Box p="md" style={{ borderTop: '1px solid #e2e8f0', background: '#ffffff' }}>
                             <Group gap="xs">
-                                <TextInput
-                                    placeholder="Type your message..."
-                                    value={inputValue}
-                                    onChange={(e) => setInputValue(e.target.value)}
-                                    onKeyPress={handleKeyPress}
-                                    radius="xl"
-                                    flex={1}
-                                    styles={{
-                                        input: {
-                                            background: 'rgba(255, 255, 255, 0.05)',
-                                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                                            color: 'white',
-                                            '&::placeholder': {
-                                                color: 'var(--mantine-color-gray-5)',
-                                            },
-                                        },
-                                    }}
-                                />
-                                <ActionIcon
-                                    size="lg"
-                                    radius="xl"
-                                    variant="gradient"
-                                    gradient={{ from: 'violet', to: 'pink', deg: 135 }}
-                                    onClick={handleSend}
-                                    disabled={!inputValue.trim()}
-                                >
-                                    <IconSend size={18} />
-                                </ActionIcon>
+                                <TextInput placeholder="Type a message..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyPress={handleKeyPress} radius="xl" flex={1} styles={{ input: { background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a' } }} />
+                                <ActionIcon size="lg" radius="xl" style={{ background: '#2563EB' }} onClick={() => handleSend()} disabled={!inputValue.trim()}><IconSend size={18} color="white" /></ActionIcon>
                             </Group>
+                            <Text size="xs" c="#94a3b8" ta="center" mt="xs">Powered by RareJob • <a href="#faq" style={{ color: '#2563EB', textDecoration: 'none' }}>View FAQ</a></Text>
                         </Box>
                     </Paper>
                 )}
             </Transition>
 
-            {/* Animation styles */}
-            <style>{`
-        @keyframes typing {
-          0%, 100% { opacity: 0.3; transform: translateY(0); }
-          50% { opacity: 1; transform: translateY(-4px); }
-        }
-        
-        @keyframes robotBounce {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          25% { transform: translateY(-2px) rotate(-5deg); }
-          75% { transform: translateY(-2px) rotate(5deg); }
-        }
-        
-        @keyframes sparkle {
-          0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
-          50% { opacity: 0.5; transform: scale(1.2) rotate(180deg); }
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
-        }
-        
-        @keyframes pulse-ring {
-          0% { transform: scale(1); opacity: 0.5; }
-          100% { transform: scale(1.4); opacity: 0; }
-        }
-        
-        @keyframes slideIn {
-          0% { opacity: 0; transform: translateY(-50%) translateX(10px); }
-          100% { opacity: 1; transform: translateY(-50%) translateX(0); }
-        }
-      `}</style>
+            <style>{`@keyframes typing { 0%, 100% { opacity: 0.3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }`}</style>
         </>
     );
 }
