@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box } from '@mantine/core';
 import { Header } from './components/Header';
-import { Hero } from './components/Hero';
+import Hero from './components/Hero';
 import { Services } from './components/Services';
 import { Testimonials } from './components/Testimonials';
 import { Requirements } from './components/Requirements';
